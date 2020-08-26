@@ -1,0 +1,7 @@
+# Rename to ./config.toml or move to $HOME/.fattingo/config.toml
+[db]
+    user = "root"
+    password = "s3cr3t"
+    host = "db"
+    port = 3306
+    name = "fattingo_db"
