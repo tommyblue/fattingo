@@ -10,7 +10,8 @@ import (
 // of using an interface here instead of the final type (that
 // doesn't change) is to be able to mock the db when testing
 type dataStore interface {
-	allCustomers() ([]*customer, error)
+	Customers() ([]*customer, error)
+	Customer(int) (*customer, error)
 	Close() error
 }
 

@@ -6,27 +6,63 @@ import (
 	"testing"
 )
 
-type mockDB struct{}
+type mockDB struct {
+	customers []*customer
+}
 
 func (mdb *mockDB) Close() error {
 	return nil
 }
-
-func (mdb *mockDB) allCustomers() ([]*customer, error) {
-	customers := make([]*customer, 0)
-	customers = append(customers, &customer{
-		ID: 1,
-	})
-	return customers, nil
+func (mdb *mockDB) Customer(id int) (*customer, error) {
+	return mdb.customers[0], nil
 }
 
-func TestCustomersIndex(t *testing.T) {
+func (mdb *mockDB) Customers() ([]*customer, error) {
+	return mdb.customers, nil
+}
+
+func TestCustomers(t *testing.T) {
 	rec := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/customers", nil)
 
-	http.Handler(customersHandler(&mockDB{})).ServeHTTP(rec, req)
+	customers := make([]*customer, 0)
+	n := "NameTest"
+	s := "SurnameTest"
+	customers = append(customers, &customer{
+		ID:      1,
+		Name:    &n,
+		Surname: &s,
+	})
+	db := &mockDB{
+		customers: customers,
+	}
+	http.Handler(customersHandler(db)).ServeHTTP(rec, req)
 
-	want := "[{\"id\":1,\"title\":null,\"name\":null,\"surname\":null,\"address\":null,\"zip_code\":null,\"town\":null,\"province\":null,\"country\":null,\"tax_code\":null,\"vat\":null,\"info\":null}]\n"
+	want := "[{\"id\":1,\"title\":null,\"name\":\"NameTest\",\"surname\":\"SurnameTest\",\"address\":null,\"zip_code\":null,\"town\":null,\"province\":null,\"country\":null,\"tax_code\":null,\"vat\":null,\"info\":null}]\n"
+	if want != rec.Body.String() {
+		t.Errorf("want: %v, got: %v", want, rec.Body.String())
+	}
+}
+
+func TestCustomer(t *testing.T) {
+	rec := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/customer?id=1", nil)
+
+	customers := make([]*customer, 0)
+	n := "NameTest"
+	s := "SurnameTest"
+	customers = append(customers, &customer{
+		ID:      1,
+		Name:    &n,
+		Surname: &s,
+	})
+	db := &mockDB{
+		customers: customers,
+	}
+
+	http.Handler(customerHandler(db)).ServeHTTP(rec, req)
+
+	want := "{\"id\":1,\"title\":null,\"name\":\"NameTest\",\"surname\":\"SurnameTest\",\"address\":null,\"zip_code\":null,\"town\":null,\"province\":null,\"country\":null,\"tax_code\":null,\"vat\":null,\"info\":null}\n"
 	if want != rec.Body.String() {
 		t.Errorf("want: %v, got: %v", want, rec.Body.String())
 	}

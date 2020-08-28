@@ -32,7 +32,7 @@ type customer struct {
 	Info     *string `json:"info"`
 }
 
-func (db *database) allCustomers() ([]*customer, error) {
+func (db *database) Customers() ([]*customer, error) {
 	rows, err := db.Query(`
 	SELECT
 		id,
@@ -82,4 +82,42 @@ func (db *database) allCustomers() ([]*customer, error) {
 	}
 
 	return customers, nil
+}
+
+func (db *database) Customer(id int) (*customer, error) {
+	c := &customer{}
+	err := db.QueryRow(`
+	SELECT
+		id,
+		title,
+		name,
+		surname,
+		address,
+		zip_code,
+		town,
+		province,
+		country,
+		tax_code,
+		vat,
+		info
+	FROM customers
+	WHERE id = ?`, id).Scan(
+		&c.ID,
+		&c.Title,
+		&c.Name,
+		&c.Surname,
+		&c.Address,
+		&c.ZipCode,
+		&c.Town,
+		&c.Province,
+		&c.Country,
+		&c.TaxCode,
+		&c.Vat,
+		&c.Info,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return c, nil
 }

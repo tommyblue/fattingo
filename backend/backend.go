@@ -29,8 +29,9 @@ func NewBackend(cfg *Config) (*Backend, error) {
 }
 
 func (b *Backend) Run() error {
-	http.Handle("/", withLogs(withMetrics(rootHandler())))
 	http.Handle("/customers", withLogs(withMetrics(customersHandler(b.db))))
+	http.Handle("/customer", withLogs(withMetrics(customerHandler(b.db))))
+	http.Handle("/", withLogs(withMetrics(rootHandler())))
 
 	b.srv = &http.Server{
 		Addr:         ":5000",
