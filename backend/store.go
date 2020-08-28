@@ -6,6 +6,15 @@ import (
 	"time"
 )
 
+type storeError struct {
+	status int
+	msg    string
+}
+
+func (err *storeError) Error() string {
+	return err.msg
+}
+
 // store mimics the go-sql-driver features. The primary target
 // of using an interface here instead of the final type (that
 // doesn't change) is to be able to mock the db when testing
@@ -13,6 +22,7 @@ type dataStore interface {
 	Customers() ([]*customer, error)
 	Customer(int) (*customer, error)
 	CreateCustomer(*customer) (*customer, error)
+	DeleteCustomer(int) error
 	Close() error
 }
 

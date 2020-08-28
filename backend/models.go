@@ -1,8 +1,11 @@
 package fattingo
 
 import (
-	"errors"
+	"fmt"
+	"net/http"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 )
 
 type user struct {
@@ -147,7 +150,7 @@ INSERT INTO customers (
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 `
 	now := time.Now()
-	_, err := db.Exec(sqlStatement,
+	res, err := db.Exec(sqlStatement,
 		c.Title,
 		c.Name,
 		c.Surname,
@@ -167,53 +170,35 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 		return nil, err
 	}
 
-	rows, err := db.Query(`
-	SELECT
-		id,
-		title,
-		name,
-		surname,
-		address,
-		zip_code,
-		town,
-		province,
-		country,
-		tax_code,
-		vat,
-		info
-	FROM customers
-	ORDER BY id DESC
-	LIMIT 1;`)
+	id, err := res.LastInsertId()
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
-	for rows.Next() {
-		c := &customer{}
-		err = rows.Scan(
-			&c.ID,
-			&c.Title,
-			&c.Name,
-			&c.Surname,
-			&c.Address,
-			&c.ZipCode,
-			&c.Town,
-			&c.Province,
-			&c.Country,
-			&c.TaxCode,
-			&c.Vat,
-			&c.Info,
-		)
-		if err != nil {
-			return nil, err
-		}
-		return c, nil
+	return db.Customer(int(id))
+}
+
+func (db *database) DeleteCustomer(id int) error {
+	res, err := db.Exec(`DELETE FROM customers WHERE id=?;`, id)
+	if err != nil {
+		return err
 	}
 
-	if err = rows.Err(); err != nil {
-		return nil, err
+	n, err := res.RowsAffected()
+	if err != nil {
+		return err
 	}
 
-	return nil, errors.New("Can't find the created customer")
+	if n == 0 {
+		msg := fmt.Sprintf("Can't find the customer with id %d", id)
+		return &storeError{status: http.StatusNotFound, msg: msg}
+	}
+
+	if n > 1 {
+		msg := fmt.Sprintf("Too many deleted customers (%d)", n)
+		log.Errorf("%s with id %d", msg, id)
+		return &storeError{status: http.StatusInternalServerError, msg: msg}
+	}
+
+	return nil
 }

@@ -46,7 +46,7 @@ func customersHandler(db dataStore) http.Handler {
 
 func customerHandler(db dataStore) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != "GET" {
+		if r.Method != "GET" && r.Method != "DELETE" {
 			http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
 			log.Warnf("[%s] %s - Method not allowed", r.Method, r.URL)
 			return
@@ -57,6 +57,22 @@ func customerHandler(db dataStore) http.Handler {
 			log.Warn(err.Error())
 			return
 		}
+
+		if r.Method == "DELETE" {
+			if err := db.DeleteCustomer(customerID); err != nil {
+				var sErr *storeError
+				if errors.As(err, &sErr) {
+					http.Error(w, sErr.msg, sErr.status)
+				} else {
+					log.Error(err)
+					http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+				}
+				return
+			}
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+
 		customer, err := db.Customer(customerID)
 
 		if err != nil {
