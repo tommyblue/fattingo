@@ -21,7 +21,7 @@ func rootHandler() http.Handler {
 	})
 }
 
-func customersHandler(db store) http.Handler {
+func customersHandler(db dataStore) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "GET" {
 			http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
@@ -29,7 +29,7 @@ func customersHandler(db store) http.Handler {
 			return
 		}
 
-		customers, err := allCustomers(db)
+		customers, err := db.allCustomers()
 
 		if err != nil {
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)

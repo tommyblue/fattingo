@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"net/http"
 	"time"
 
@@ -9,11 +10,12 @@ import (
 
 type backend struct {
 	cfg *config
-	db  store
+	db  dataStore
+	srv *http.Server
 }
 
-func NewBackend(cfg *config) (*backend, error) {
-	db, err := NewStore(cfg)
+func newBackend(cfg *config) (*backend, error) {
+	db, err := newStore(cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -26,18 +28,34 @@ func NewBackend(cfg *config) (*backend, error) {
 	return bk, nil
 }
 
-func (b *backend) Run() {
+func (b *backend) run() error {
 	http.Handle("/", withLogs(withMetrics(rootHandler())))
 	http.Handle("/customers", withLogs(withMetrics(customersHandler(b.db))))
 
-	srv := &http.Server{
+	b.srv = &http.Server{
 		Addr:         ":5000",
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
 	}
-	log.Fatal(srv.ListenAndServe())
+	log.Info("starting HTTP server...")
+	return b.srv.ListenAndServe()
 }
 
-func (b *backend) Stop() {
-	b.db.Close()
+func (b *backend) stop() {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer func() {
+		cancel()
+	}()
+
+	log.Info("stopping http server...")
+	if err := b.srv.Shutdown(ctx); err != nil {
+		log.Fatalf("server shutdown failed: %+v", err)
+	}
+
+	log.Info("closing db connection...")
+	if err := b.db.Close(); err != nil {
+		log.Fatalf("DB connection closing failed: %+v", err)
+	}
+
+	log.Info("exited properly")
 }

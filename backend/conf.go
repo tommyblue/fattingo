@@ -7,11 +7,11 @@ import (
 )
 
 type config struct {
-	DbUser     string
-	DbPassword string
-	DbHost     string
-	DbPort     uint
-	DbName     string
+	dbUser     string
+	dbPassword string
+	dbHost     string
+	dbPort     uint
+	dbName     string
 }
 
 func readConf() (*config, error) {
@@ -36,11 +36,11 @@ func readConf() (*config, error) {
 	}
 
 	cfg := &config{
-		DbUser:     viper.GetString("db.user"),
-		DbPassword: viper.GetString("db.password"),
-		DbHost:     viper.GetString("db.host"),
-		DbPort:     viper.GetUint("db.port"),
-		DbName:     viper.GetString("db.name"),
+		dbUser:     viper.GetString("db.user"),
+		dbPassword: viper.GetString("db.password"),
+		dbHost:     viper.GetString("db.host"),
+		dbPort:     viper.GetUint("db.port"),
+		dbName:     viper.GetString("db.name"),
 	}
 
 	return cfg, nil

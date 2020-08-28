@@ -1,6 +1,6 @@
 package main
 
-type User struct {
+type user struct {
 	ID       int     `json:"id"`
 	Title    *string `json:"title"`
 	Name     *string `json:"name"`
@@ -16,11 +16,11 @@ type User struct {
 	Email    *string `json:"email"`
 }
 
-type Customer struct {
+type customer struct {
 	ID       int     `json:"id"`
 	UserID   int     `json:"user_id,omitempty"`
 	Title    *string `json:"title"`
-	Name     *string `json:"Name"`
+	Name     *string `json:"name"`
 	Surname  *string `json:"surname"`
 	Address  *string `json:"address"`
 	ZipCode  *string `json:"zip_code"`
@@ -32,7 +32,7 @@ type Customer struct {
 	Info     *string `json:"info"`
 }
 
-func allCustomers(db store) ([]*Customer, error) {
+func (db *database) allCustomers() ([]*customer, error) {
 	rows, err := db.Query(`
 	SELECT
 		id,
@@ -54,9 +54,9 @@ func allCustomers(db store) ([]*Customer, error) {
 	}
 	defer rows.Close()
 
-	customers := make([]*Customer, 0)
+	customers := make([]*customer, 0)
 	for rows.Next() {
-		c := &Customer{}
+		c := &customer{}
 		err = rows.Scan(
 			&c.ID,
 			&c.Title,
