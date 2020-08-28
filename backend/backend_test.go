@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"testing"
 )
 
@@ -60,9 +61,11 @@ func TestCustomers(t *testing.T) {
 	}
 	http.Handler(customersHandler(db)).ServeHTTP(rec, req)
 
-	want := "[{\"id\":1,\"title\":null,\"name\":\"NameTest\",\"surname\":\"SurnameTest\",\"address\":null,\"zip_code\":null,\"town\":null,\"province\":null,\"country\":null,\"tax_code\":null,\"vat\":null,\"info\":null}]\n"
-	if want != rec.Body.String() {
-		t.Errorf("want: %v, got: %v", want, rec.Body.String())
+	var c []*customer
+	json.Unmarshal(rec.Body.Bytes(), &c)
+
+	if !reflect.DeepEqual(customers, c) {
+		t.Errorf("want: %v, got: %v", customers, c)
 	}
 }
 
@@ -84,15 +87,26 @@ func TestCustomer(t *testing.T) {
 
 	http.Handler(customerHandler(db)).ServeHTTP(rec, req)
 
-	want := "{\"id\":1,\"title\":null,\"name\":\"NameTest\",\"surname\":\"SurnameTest\",\"address\":null,\"zip_code\":null,\"town\":null,\"province\":null,\"country\":null,\"tax_code\":null,\"vat\":null,\"info\":null}\n"
-	if want != rec.Body.String() {
-		t.Errorf("want: %v, got: %v", want, rec.Body.String())
+	var c *customer
+	json.Unmarshal(rec.Body.Bytes(), &c)
+
+	if !reflect.DeepEqual(customers[0], c) {
+		t.Errorf("want: %v, got: %v", customers[0], c)
 	}
 }
 
 func TestCreateCustomer(t *testing.T) {
 	rec := httptest.NewRecorder()
-	jsonStr := []byte(`{"title":"CreateTitleTest", "name":"CreateNameTest", "surname":"CreateSurnameTest"}`)
+	tl := "CreateTitleTest"
+	n := "CreateNameTest"
+	s := "CreateSurnameTest"
+	want := &customer{
+		ID:      9999,
+		Title:   &tl,
+		Name:    &n,
+		Surname: &s,
+	}
+	jsonStr := []byte(fmt.Sprintf(`{"title":"%s", "name":"%s", "surname":"%s"}`, tl, n, s))
 	req, _ := http.NewRequest("POST", "/api/v1/customers", bytes.NewBuffer(jsonStr))
 
 	db := &mockDB{
@@ -101,9 +115,11 @@ func TestCreateCustomer(t *testing.T) {
 
 	http.Handler(customersHandler(db)).ServeHTTP(rec, req)
 
-	want := "{\"id\":9999,\"title\":\"CreateTitleTest\",\"name\":\"CreateNameTest\",\"surname\":\"CreateSurnameTest\",\"address\":null,\"zip_code\":null,\"town\":null,\"province\":null,\"country\":null,\"tax_code\":null,\"vat\":null,\"info\":null}\n"
-	if want != rec.Body.String() {
-		t.Errorf("want: %v, got: %v", want, rec.Body.String())
+	var c *customer
+	json.Unmarshal(rec.Body.Bytes(), &c)
+
+	if !reflect.DeepEqual(want, c) {
+		t.Errorf("want: %v, got: %v", want, c)
 	}
 }
 
