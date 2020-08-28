@@ -7,6 +7,7 @@ import (
 	"syscall"
 
 	log "github.com/sirupsen/logrus"
+	fattingo "github.com/tommyblue/fattingo/backend"
 )
 
 func init() {
@@ -23,11 +24,11 @@ func init() {
 
 func main() {
 	// time.Sleep(5 * time.Second)
-	cfg, err := readConf()
+	cfg, err := fattingo.ReadConf()
 	if err != nil {
 		log.Fatal(err)
 	}
-	bk, err := newBackend(cfg)
+	bk, err := fattingo.NewBackend(cfg)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -36,12 +37,12 @@ func main() {
 	signal.Notify(quitCh, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 
 	go func() {
-		if err := bk.run(); err != nil && err != http.ErrServerClosed {
+		if err := bk.Run(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("listen: %s\n", err)
 		}
 	}()
 
 	<-quitCh
 	log.Warn("CTRL+C caught, doing clean shutdown (use CTRL+\\ aka SIGQUIT to abort)")
-	bk.stop()
+	bk.Stop()
 }

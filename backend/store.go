@@ -1,4 +1,4 @@
-package main
+package fattingo
 
 import (
 	"database/sql"
@@ -18,7 +18,7 @@ type database struct {
 	*sql.DB
 }
 
-func newStore(cfg *config) (*database, error) {
+func newStore(cfg *Config) (*database, error) {
 	connString := fmt.Sprintf(
 		"%s:%s@tcp(%s:%d)/%s",
 		cfg.dbUser,

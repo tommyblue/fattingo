@@ -1,4 +1,4 @@
-package main
+package fattingo
 
 import (
 	"net/http"

@@ -1,4 +1,4 @@
-package main
+package fattingo
 
 import (
 	"context"
@@ -8,19 +8,19 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type backend struct {
-	cfg *config
+type Backend struct {
+	cfg *Config
 	db  dataStore
 	srv *http.Server
 }
 
-func newBackend(cfg *config) (*backend, error) {
+func NewBackend(cfg *Config) (*Backend, error) {
 	db, err := newStore(cfg)
 	if err != nil {
 		return nil, err
 	}
 
-	bk := &backend{
+	bk := &Backend{
 		cfg: cfg,
 		db:  db,
 	}
@@ -28,7 +28,7 @@ func newBackend(cfg *config) (*backend, error) {
 	return bk, nil
 }
 
-func (b *backend) run() error {
+func (b *Backend) Run() error {
 	http.Handle("/", withLogs(withMetrics(rootHandler())))
 	http.Handle("/customers", withLogs(withMetrics(customersHandler(b.db))))
 
@@ -41,7 +41,7 @@ func (b *backend) run() error {
 	return b.srv.ListenAndServe()
 }
 
-func (b *backend) stop() {
+func (b *Backend) Stop() {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer func() {
 		cancel()

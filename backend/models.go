@@ -1,4 +1,4 @@
-package main
+package fattingo
 
 type user struct {
 	ID       int     `json:"id"`
