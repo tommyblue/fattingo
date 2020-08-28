@@ -1,5 +1,9 @@
 # Fatt-in-Go
 
+[![PkgGoDev](https://pkg.go.dev/badge/github.com/tommyblue/fattingo/backend)](https://pkg.go.dev/github.com/tommyblue/fattingo/backend)
+
+![Go](https://github.com/tommyblue/fattingo/workflows/Go/badge.svg)
+
 This project aims to be a replacement for my old
 software [RubyFatt](https://github.com/tommyblue/rubyfatt).
 
