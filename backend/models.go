@@ -1,5 +1,10 @@
 package fattingo
 
+import (
+	"errors"
+	"time"
+)
+
 type user struct {
 	ID       int     `json:"id"`
 	Title    *string `json:"title"`
@@ -48,7 +53,7 @@ func (db *database) Customers() ([]*customer, error) {
 		vat,
 		info
 	FROM customers
-	ORDER BY title ASC;`)
+	ORDER BY id DESC;`)
 	if err != nil {
 		return nil, err
 	}
@@ -120,4 +125,95 @@ func (db *database) Customer(id int) (*customer, error) {
 	}
 
 	return c, nil
+}
+
+func (db *database) CreateCustomer(c *customer) (*customer, error) {
+	sqlStatement := `
+INSERT INTO customers (
+	title,
+	name,
+	surname,
+	address,
+	zip_code,
+	town,
+	province,
+	country,
+	tax_code,
+	vat,
+	info,
+	created_at,
+	updated_at
+)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+`
+	now := time.Now()
+	_, err := db.Exec(sqlStatement,
+		c.Title,
+		c.Name,
+		c.Surname,
+		c.Address,
+		c.ZipCode,
+		c.Town,
+		c.Province,
+		c.Country,
+		c.TaxCode,
+		c.Vat,
+		c.Info,
+		now,
+		now,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := db.Query(`
+	SELECT
+		id,
+		title,
+		name,
+		surname,
+		address,
+		zip_code,
+		town,
+		province,
+		country,
+		tax_code,
+		vat,
+		info
+	FROM customers
+	ORDER BY id DESC
+	LIMIT 1;`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		c := &customer{}
+		err = rows.Scan(
+			&c.ID,
+			&c.Title,
+			&c.Name,
+			&c.Surname,
+			&c.Address,
+			&c.ZipCode,
+			&c.Town,
+			&c.Province,
+			&c.Country,
+			&c.TaxCode,
+			&c.Vat,
+			&c.Info,
+		)
+		if err != nil {
+			return nil, err
+		}
+		return c, nil
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return nil, errors.New("Can't find the created customer")
 }

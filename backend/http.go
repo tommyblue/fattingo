@@ -2,6 +2,7 @@ package fattingo
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -24,7 +25,10 @@ func rootHandler() http.Handler {
 
 func customersHandler(db dataStore) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != "GET" {
+		if r.Method == "POST" {
+			createCustomerHandler(db, w, r)
+			return
+		} else if r.Method != "GET" {
 			http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
 			log.Warnf("[%s] %s - Method not allowed", r.Method, r.URL)
 			return
@@ -46,24 +50,13 @@ func customerHandler(db dataStore) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "GET" {
 			http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
-			log.Warnf("[%s] %s - (405) Method not allowed", r.Method, r.URL)
+			log.Warnf("[%s] %s - Method not allowed", r.Method, r.URL)
 			return
 		}
 
-		keys, ok := r.URL.Query()["id"]
-
-		if !ok || len(keys[0]) < 1 {
-			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte("(400) Missing 'id' param\n"))
-			log.Warnf("[%s] %s - (400) Missing 'id' param", r.Method, r.URL)
-			return
-		}
-
-		customerID, err := strconv.Atoi(keys[0])
+		customerID, err := getURLQueryParam("id", w, r)
 		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte(fmt.Sprintf("(400) Wrong 'id' param %s\n", keys[0])))
-			log.Warnf("[%s] %s - (400) Missing 'id' param", r.Method, r.URL)
+			log.Warn(err.Error())
 			return
 		}
 		customer, err := db.Customer(customerID)
@@ -76,6 +69,31 @@ func customerHandler(db dataStore) http.Handler {
 
 		json.NewEncoder(w).Encode(customer)
 	})
+}
+
+func createCustomerHandler(db dataStore, w http.ResponseWriter, r *http.Request) {
+	var c customer
+	err := decodeJSONBody(w, r, &c)
+	if err != nil {
+		var mr *malformedRequest
+		if errors.As(err, &mr) {
+			http.Error(w, mr.msg, mr.status)
+		} else {
+			log.Error(err)
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		}
+		return
+	}
+
+	customer, err := db.CreateCustomer(&c)
+	if err != nil {
+		log.Error(err)
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(customer)
 }
 
 func withLogs(next http.Handler) http.Handler {
@@ -91,4 +109,23 @@ func withMetrics(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 		log.Debugf("[%s] %s took %s", r.Method, r.URL, time.Since(began))
 	})
+}
+
+func getURLQueryParam(key string, w http.ResponseWriter, r *http.Request) (int, error) {
+	keys, ok := r.URL.Query()[key]
+
+	if !ok || len(keys[0]) < 1 {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(fmt.Sprintf("(400) Missing '%s' param\n", key)))
+		return 0, fmt.Errorf("[%s] %s - (400) Missing '%s' param", r.Method, r.URL, key)
+	}
+
+	value, err := strconv.Atoi(keys[0])
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(fmt.Sprintf("(400) Wrong '%s' param %s\n", key, keys[0])))
+		return 0, fmt.Errorf("[%s] %s - (400) Missing '%s' param", r.Method, r.URL, key)
+	}
+
+	return value, nil
 }

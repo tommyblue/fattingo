@@ -12,6 +12,7 @@ import (
 type dataStore interface {
 	Customers() ([]*customer, error)
 	Customer(int) (*customer, error)
+	CreateCustomer(*customer) (*customer, error)
 	Close() error
 }
 
