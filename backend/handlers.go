@@ -5,8 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strconv"
-	"time"
 
 	_ "github.com/go-sql-driver/mysql"
 	log "github.com/sirupsen/logrus"
@@ -94,38 +92,4 @@ func createCustomerHandler(db dataStore, w http.ResponseWriter, r *http.Request)
 
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(customer)
-}
-
-func withLogs(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Debugf("[%s] %s", r.Method, r.URL)
-		next.ServeHTTP(w, r)
-	})
-}
-
-func withMetrics(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		began := time.Now()
-		next.ServeHTTP(w, r)
-		log.Debugf("[%s] %s took %s", r.Method, r.URL, time.Since(began))
-	})
-}
-
-func getURLQueryParam(key string, w http.ResponseWriter, r *http.Request) (int, error) {
-	keys, ok := r.URL.Query()[key]
-
-	if !ok || len(keys[0]) < 1 {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(fmt.Sprintf("(400) Missing '%s' param\n", key)))
-		return 0, fmt.Errorf("[%s] %s - (400) Missing '%s' param", r.Method, r.URL, key)
-	}
-
-	value, err := strconv.Atoi(keys[0])
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(fmt.Sprintf("(400) Wrong '%s' param %s\n", key, keys[0])))
-		return 0, fmt.Errorf("[%s] %s - (400) Missing '%s' param", r.Method, r.URL, key)
-	}
-
-	return value, nil
 }

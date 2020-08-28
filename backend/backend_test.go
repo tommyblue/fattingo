@@ -30,7 +30,7 @@ func (mdb *mockDB) CreateCustomer(c *customer) (*customer, error) {
 
 func TestCustomers(t *testing.T) {
 	rec := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/customers", nil)
+	req, _ := http.NewRequest("GET", "/api/v1/customers", nil)
 
 	customers := make([]*customer, 0)
 	n := "NameTest"
@@ -53,7 +53,7 @@ func TestCustomers(t *testing.T) {
 
 func TestCustomer(t *testing.T) {
 	rec := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/customer?id=1", nil)
+	req, _ := http.NewRequest("GET", "/api/v1/customer?id=1", nil)
 
 	customers := make([]*customer, 0)
 	n := "NameTest"
@@ -78,7 +78,7 @@ func TestCustomer(t *testing.T) {
 func TestCreateCustomer(t *testing.T) {
 	rec := httptest.NewRecorder()
 	jsonStr := []byte(`{"title":"CreateTitleTest", "name":"CreateNameTest", "surname":"CreateSurnameTest"}`)
-	req, _ := http.NewRequest("POST", "/customers", bytes.NewBuffer(jsonStr))
+	req, _ := http.NewRequest("POST", "/api/v1/customers", bytes.NewBuffer(jsonStr))
 
 	db := &mockDB{
 		customers: make([]*customer, 0),

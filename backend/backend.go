@@ -2,7 +2,9 @@ package fattingo
 
 import (
 	"context"
+	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -29,8 +31,8 @@ func NewBackend(cfg *Config) (*Backend, error) {
 }
 
 func (b *Backend) Run() error {
-	http.Handle("/customers", withLogs(withMetrics(customersHandler(b.db))))
-	http.Handle("/customer", withLogs(withMetrics(customerHandler(b.db))))
+	http.Handle("/api/v1/customers", withLogs(withMetrics(customersHandler(b.db))))
+	http.Handle("/api/v1/customer", withLogs(withMetrics(customerHandler(b.db))))
 	http.Handle("/", withLogs(withMetrics(rootHandler())))
 
 	b.srv = &http.Server{
@@ -59,4 +61,38 @@ func (b *Backend) Stop() {
 	}
 
 	log.Info("exited properly")
+}
+
+func withLogs(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.Debugf("[%s] %s", r.Method, r.URL)
+		next.ServeHTTP(w, r)
+	})
+}
+
+func withMetrics(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		began := time.Now()
+		next.ServeHTTP(w, r)
+		log.Debugf("[%s] %s took %s", r.Method, r.URL, time.Since(began))
+	})
+}
+
+func getURLQueryParam(key string, w http.ResponseWriter, r *http.Request) (int, error) {
+	keys, ok := r.URL.Query()[key]
+
+	if !ok || len(keys[0]) < 1 {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(fmt.Sprintf("(400) Missing '%s' param\n", key)))
+		return 0, fmt.Errorf("[%s] %s - (400) Missing '%s' param", r.Method, r.URL, key)
+	}
+
+	value, err := strconv.Atoi(keys[0])
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(fmt.Sprintf("(400) Wrong '%s' param %s\n", key, keys[0])))
+		return 0, fmt.Errorf("[%s] %s - (400) Missing '%s' param", r.Method, r.URL, key)
+	}
+
+	return value, nil
 }

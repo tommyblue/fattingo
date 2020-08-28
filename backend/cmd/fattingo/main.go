@@ -28,7 +28,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	bk, err := fattingo.NewBackend(cfg)
+	api, err := fattingo.NewBackend(cfg)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -37,12 +37,12 @@ func main() {
 	signal.Notify(quitCh, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 
 	go func() {
-		if err := bk.Run(); err != nil && err != http.ErrServerClosed {
+		if err := api.Run(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("listen: %s\n", err)
 		}
 	}()
 
 	<-quitCh
 	log.Warn("CTRL+C caught, doing clean shutdown (use CTRL+\\ aka SIGQUIT to abort)")
-	bk.Stop()
+	api.Stop()
 }
