@@ -56,10 +56,12 @@ func TestCustomers(t *testing.T) {
 		Name:    &n,
 		Surname: &s,
 	})
-	db := &mockDB{
-		customers: customers,
+	b := &Backend{
+		db: &mockDB{
+			customers: customers,
+		},
 	}
-	http.Handler(customersHandler(db)).ServeHTTP(rec, req)
+	http.Handler(b.customersHandler()).ServeHTTP(rec, req)
 
 	var c []*customer
 	json.Unmarshal(rec.Body.Bytes(), &c)
@@ -81,11 +83,13 @@ func TestCustomer(t *testing.T) {
 		Name:    &n,
 		Surname: &s,
 	})
-	db := &mockDB{
-		customers: customers,
+	b := &Backend{
+		db: &mockDB{
+			customers: customers,
+		},
 	}
 
-	http.Handler(customerHandler(db)).ServeHTTP(rec, req)
+	http.Handler(b.customerHandler()).ServeHTTP(rec, req)
 
 	var c *customer
 	json.Unmarshal(rec.Body.Bytes(), &c)
@@ -109,11 +113,12 @@ func TestCreateCustomer(t *testing.T) {
 	jsonStr := []byte(fmt.Sprintf(`{"title":"%s", "name":"%s", "surname":"%s"}`, tl, n, s))
 	req, _ := http.NewRequest("POST", "/api/v1/customers", bytes.NewBuffer(jsonStr))
 
-	db := &mockDB{
-		customers: make([]*customer, 0),
+	b := &Backend{
+		db: &mockDB{
+			customers: make([]*customer, 0),
+		},
 	}
-
-	http.Handler(customersHandler(db)).ServeHTTP(rec, req)
+	http.Handler(b.customersHandler()).ServeHTTP(rec, req)
 
 	var c *customer
 	json.Unmarshal(rec.Body.Bytes(), &c)
@@ -134,14 +139,16 @@ func TestDeleteCustomer(t *testing.T) {
 			Surname: &s,
 		})
 	}
-	db := &mockDB{
-		customers: customers,
+	b := &Backend{
+		db: &mockDB{
+			customers: customers,
+		},
 	}
 
 	// Load customers
 	rec := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/api/v1/customers", nil)
-	http.Handler(customersHandler(db)).ServeHTTP(rec, req)
+	http.Handler(b.customersHandler()).ServeHTTP(rec, req)
 
 	var oldCustomers []*customer
 	json.Unmarshal(rec.Body.Bytes(), &oldCustomers)
@@ -149,12 +156,12 @@ func TestDeleteCustomer(t *testing.T) {
 	// Delete 1 customer
 	delRec := httptest.NewRecorder()
 	delReq, _ := http.NewRequest("DELETE", "/api/v1/customers?id=2", nil)
-	http.Handler(customerHandler(db)).ServeHTTP(delRec, delReq)
+	http.Handler(b.customerHandler()).ServeHTTP(delRec, delReq)
 
 	// Reload customers
 	newRec := httptest.NewRecorder()
 	newReq, _ := http.NewRequest("GET", "/api/v1/customers", nil)
-	http.Handler(customersHandler(db)).ServeHTTP(newRec, newReq)
+	http.Handler(b.customersHandler()).ServeHTTP(newRec, newReq)
 
 	var newCustomers []*customer
 	json.Unmarshal(newRec.Body.Bytes(), &newCustomers)

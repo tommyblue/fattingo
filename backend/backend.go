@@ -31,9 +31,9 @@ func NewBackend(cfg *Config) (*Backend, error) {
 }
 
 func (b *Backend) Run() error {
-	http.HandleFunc("/api/v1/customers", withLogs(withMetrics(customersHandler(b.db))))
-	http.HandleFunc("/api/v1/customer", withLogs(withMetrics(customerHandler(b.db))))
-	http.HandleFunc("/", withLogs(withMetrics(rootHandler())))
+	http.HandleFunc("/api/v1/customers", withLogs(withMetrics(b.customersHandler())))
+	http.HandleFunc("/api/v1/customer", withLogs(withMetrics(b.customerHandler())))
+	http.HandleFunc("/", withLogs(withMetrics(b.rootHandler())))
 
 	b.srv = &http.Server{
 		Addr:         ":5000",

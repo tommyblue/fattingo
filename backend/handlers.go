@@ -10,7 +10,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func rootHandler() http.HandlerFunc {
+func (b *Backend) rootHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
 			w.WriteHeader(http.StatusNotFound)
@@ -21,10 +21,10 @@ func rootHandler() http.HandlerFunc {
 	}
 }
 
-func customersHandler(db dataStore) http.HandlerFunc {
+func (b *Backend) customersHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == "POST" {
-			createCustomerHandler(db, w, r)
+			b.createCustomerHandler(w, r)
 			return
 		} else if r.Method != "GET" {
 			http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
@@ -32,7 +32,7 @@ func customersHandler(db dataStore) http.HandlerFunc {
 			return
 		}
 
-		customers, err := db.Customers()
+		customers, err := b.db.Customers()
 
 		if err != nil {
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -44,7 +44,7 @@ func customersHandler(db dataStore) http.HandlerFunc {
 	}
 }
 
-func customerHandler(db dataStore) http.HandlerFunc {
+func (b *Backend) customerHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "GET" && r.Method != "DELETE" {
 			http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
@@ -59,7 +59,7 @@ func customerHandler(db dataStore) http.HandlerFunc {
 		}
 
 		if r.Method == "DELETE" {
-			if err := db.DeleteCustomer(customerID); err != nil {
+			if err := b.db.DeleteCustomer(customerID); err != nil {
 				var sErr *storeError
 				if errors.As(err, &sErr) {
 					http.Error(w, sErr.msg, sErr.status)
@@ -73,7 +73,7 @@ func customerHandler(db dataStore) http.HandlerFunc {
 			return
 		}
 
-		customer, err := db.Customer(customerID)
+		customer, err := b.db.Customer(customerID)
 
 		if err != nil {
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -85,7 +85,7 @@ func customerHandler(db dataStore) http.HandlerFunc {
 	}
 }
 
-func createCustomerHandler(db dataStore, w http.ResponseWriter, r *http.Request) {
+func (b *Backend) createCustomerHandler(w http.ResponseWriter, r *http.Request) {
 	var c customer
 	err := decodeJSONBody(w, r, &c)
 	if err != nil {
@@ -99,7 +99,7 @@ func createCustomerHandler(db dataStore, w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	customer, err := db.CreateCustomer(&c)
+	customer, err := b.db.CreateCustomer(&c)
 	if err != nil {
 		log.Error(err)
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
