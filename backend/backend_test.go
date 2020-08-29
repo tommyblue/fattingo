@@ -2,13 +2,17 @@ package fattingo
 
 import (
 	"bytes"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"reflect"
 	"testing"
+
+	_ "github.com/mattn/go-sqlite3"
 )
 
 type mockDB struct {
@@ -169,5 +173,103 @@ func TestDeleteCustomer(t *testing.T) {
 	// Check
 	if len(newCustomers) != len(oldCustomers)-1 {
 		t.Errorf("want: %d, got: %d", len(oldCustomers)-1, len(newCustomers))
+	}
+}
+
+func TestCustomerLifeCycle(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skip in short mode")
+	}
+
+	dbPath := "./test-db.sqlite"
+	db, err := sql.Open("sqlite3", fmt.Sprintf("file:%s", dbPath))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.Remove(dbPath)
+
+	_, err = db.Exec(`CREATE TABLE customers (
+		id INTEGER PRIMARY KEY,
+		user_id INTEGER,
+		title TEXT,
+		name TEXT,
+		surname TEXT,
+		address TEXT,
+		zip_code TEXT,
+		town TEXT,
+		province TEXT,
+		country TEXT,
+		tax_code TEXT,
+		vat TEXT,
+		created_at TEXT NOT NULL,
+		updated_at TEXT NOT NULL,
+		info TEXT)
+	`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	bk := &Backend{
+		db: &database{db},
+	}
+
+	customers, err := bk.db.Customers()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(customers) != 0 {
+		t.Fatalf("customers, want: 0, got: %d", len(customers))
+	}
+
+	tl := "TitleTest"
+	n := "NameTest"
+	s := "SurnameTest"
+	c := &customer{
+		Title:   &tl,
+		Name:    &n,
+		Surname: &s,
+	}
+
+	_, err = bk.db.CreateCustomer(c)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	customers, err = bk.db.Customers()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(customers) != 1 {
+		t.Fatalf("customers, want: 1, got: %d", len(customers))
+	}
+
+	customer, err := bk.db.Customer(customers[0].ID)
+
+	if *customer.Name != n {
+		t.Fatalf("Name, want: %s, got: %s", n, *customer.Name)
+	}
+	if *customer.Surname != s {
+		t.Fatalf("Surname, want: %s, got: %s", s, *customer.Surname)
+	}
+	if *customer.Title != tl {
+		t.Fatalf("Title, want: %s, got: %s", tl, *customer.Title)
+	}
+
+	if err := bk.db.DeleteCustomer(customer.ID); err != nil {
+		t.Fatal(err)
+	}
+
+	customers, err = bk.db.Customers()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(customers) != 0 {
+		t.Fatalf("customers, want: 0, got: %d", len(customers))
+	}
+
+	if err := bk.db.DeleteCustomer(customer.ID); err == nil {
+		t.Fatal("Deleting not existing customer, want error, got nil")
 	}
 }
