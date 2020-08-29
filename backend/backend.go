@@ -31,9 +31,9 @@ func NewBackend(cfg *Config) (*Backend, error) {
 }
 
 func (b *Backend) Run() error {
-	http.Handle("/api/v1/customers", withLogs(withMetrics(customersHandler(b.db))))
-	http.Handle("/api/v1/customer", withLogs(withMetrics(customerHandler(b.db))))
-	http.Handle("/", withLogs(withMetrics(rootHandler())))
+	http.HandleFunc("/api/v1/customers", withLogs(withMetrics(customersHandler(b.db))))
+	http.HandleFunc("/api/v1/customer", withLogs(withMetrics(customerHandler(b.db))))
+	http.HandleFunc("/", withLogs(withMetrics(rootHandler())))
 
 	b.srv = &http.Server{
 		Addr:         ":5000",
@@ -63,19 +63,19 @@ func (b *Backend) Stop() {
 	log.Info("exited properly")
 }
 
-func withLogs(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func withLogs(next http.Handler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
 		log.Debugf("[%s] %s", r.Method, r.URL)
 		next.ServeHTTP(w, r)
-	})
+	}
 }
 
-func withMetrics(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func withMetrics(next http.Handler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
 		began := time.Now()
 		next.ServeHTTP(w, r)
 		log.Debugf("[%s] %s took %s", r.Method, r.URL, time.Since(began))
-	})
+	}
 }
 
 func getURLQueryParam(key string, w http.ResponseWriter, r *http.Request) (int, error) {

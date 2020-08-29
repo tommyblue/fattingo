@@ -10,19 +10,19 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func rootHandler() http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func rootHandler() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
 			w.WriteHeader(http.StatusNotFound)
 			w.Write([]byte(fmt.Sprintf("404 - Path '%s' not found\n", r.URL.Path)))
 			return
 		}
 		w.Write([]byte("Fatt-in-Go!\n"))
-	})
+	}
 }
 
-func customersHandler(db dataStore) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func customersHandler(db dataStore) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == "POST" {
 			createCustomerHandler(db, w, r)
 			return
@@ -41,11 +41,11 @@ func customersHandler(db dataStore) http.Handler {
 		}
 
 		json.NewEncoder(w).Encode(customers)
-	})
+	}
 }
 
-func customerHandler(db dataStore) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func customerHandler(db dataStore) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "GET" && r.Method != "DELETE" {
 			http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
 			log.Warnf("[%s] %s - Method not allowed", r.Method, r.URL)
@@ -82,7 +82,7 @@ func customerHandler(db dataStore) http.Handler {
 		}
 
 		json.NewEncoder(w).Encode(customer)
-	})
+	}
 }
 
 func createCustomerHandler(db dataStore, w http.ResponseWriter, r *http.Request) {
