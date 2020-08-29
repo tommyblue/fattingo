@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 
-	_ "github.com/go-sql-driver/mysql"
 	log "github.com/sirupsen/logrus"
 )
 
