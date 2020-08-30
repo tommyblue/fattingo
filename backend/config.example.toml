@@ -1,7 +1,15 @@
 # Rename to ./config.toml or move to $HOME/.fattingo/config.toml
+
+## MYSQL DB
+# [db]
+#     type = "mysql"
+#     user = "root"
+#     password = "s3cr3t"
+#     host = "db"
+#     port = 3306
+#     name = "fattingo_db"
+
+## SQLITE DB
 [db]
-    user = "root"
-    password = "s3cr3t"
-    host = "db"
-    port = 3306
-    name = "fattingo_db"
+    type = "sqlite3"
+    path = "./example-db.sqlite"

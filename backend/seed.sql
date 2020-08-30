@@ -1,0 +1,45 @@
+INSERT INTO customers (
+        title,
+        name,
+        surname,
+        address,
+        zip_code,
+        town,
+        province,
+        country,
+        tax_code,
+        vat,
+        info,
+        created_at,
+        updated_at
+    )
+VALUES (
+        "1st customer",
+        "customer name",
+        "customer surname",
+        "High St. 1",
+        "12345",
+        "San Francisco",
+        "",
+        "US",
+        "TAX_CODE_1",
+        "",
+        "This is my 1st customer",
+        "2020-08-30 00:13:37.568796+02:00",
+        "2020-08-30 00:13:37.568796+02:00"
+    ),
+    (
+        "2nd customer",
+        "customer name",
+        "customer surname",
+        "Low St. 2",
+        "12345",
+        "San Francisco",
+        "",
+        "US",
+        "TAX_CODE_2",
+        "",
+        "This is my 2nd customer",
+        "2020-08-30 00:13:37.568796+02:00",
+        "2020-08-30 00:13:37.568796+02:00"
+    );
