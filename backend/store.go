@@ -22,6 +22,7 @@ type dataStore interface {
 	Customers() ([]*customer, error)
 	Customer(int) (*customer, error)
 	CreateCustomer(*customer) (*customer, error)
+	UpdateCustomer(int, *customer) (*customer, error)
 	DeleteCustomer(int) error
 	Close() error
 }

@@ -45,19 +45,14 @@ func (b *Backend) customersHandler() http.HandlerFunc {
 
 func (b *Backend) customerHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != "GET" && r.Method != "DELETE" {
-			http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
-			log.Warnf("[%s] %s - Method not allowed", r.Method, r.URL)
-			return
-		}
-
 		customerID, err := getURLQueryParam("id", w, r)
 		if err != nil {
 			log.Warn(err.Error())
 			return
 		}
 
-		if r.Method == "DELETE" {
+		switch r.Method {
+		case "DELETE":
 			if err := b.db.DeleteCustomer(customerID); err != nil {
 				var sErr *storeError
 				if errors.As(err, &sErr) {
@@ -70,21 +65,54 @@ func (b *Backend) customerHandler() http.HandlerFunc {
 			}
 			w.WriteHeader(http.StatusNoContent)
 			return
-		}
+		case "PUT":
+			c, ok := b.populateCustomer(w, r)
+			if !ok {
+				return
+			}
 
-		customer, err := b.db.Customer(customerID)
+			customer, err := b.db.UpdateCustomer(customerID, c)
+			if err != nil {
+				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+				log.Error(err)
+				return
+			}
+			json.NewEncoder(w).Encode(customer)
+		case "GET":
+			customer, err := b.db.Customer(customerID)
+			if err != nil {
+				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+				log.Error(err)
+				return
+			}
 
-		if err != nil {
-			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-			log.Error(err)
+			json.NewEncoder(w).Encode(customer)
+		default:
+			http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+			log.Warnf("[%s] %s - Method not allowed", r.Method, r.URL)
 			return
 		}
-
-		json.NewEncoder(w).Encode(customer)
 	}
 }
 
 func (b *Backend) createCustomerHandler(w http.ResponseWriter, r *http.Request) {
+	c, ok := b.populateCustomer(w, r)
+	if !ok {
+		return
+	}
+
+	customer, err := b.db.CreateCustomer(c)
+	if err != nil {
+		log.Error(err)
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(customer)
+}
+
+func (b *Backend) populateCustomer(w http.ResponseWriter, r *http.Request) (*customer, bool) {
 	var c customer
 	err := decodeJSONBody(w, r, &c)
 	if err != nil {
@@ -95,16 +123,7 @@ func (b *Backend) createCustomerHandler(w http.ResponseWriter, r *http.Request) 
 			log.Error(err)
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		}
-		return
+		return nil, false
 	}
-
-	customer, err := b.db.CreateCustomer(&c)
-	if err != nil {
-		log.Error(err)
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-		return
-	}
-
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(customer)
+	return &c, true
 }

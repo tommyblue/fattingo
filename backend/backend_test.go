@@ -36,6 +36,27 @@ func (mdb *mockDB) CreateCustomer(c *customer) (*customer, error) {
 	return c, nil
 }
 
+func (mdb *mockDB) UpdateCustomer(id int, c *customer) (*customer, error) {
+	for i, cust := range mdb.customers {
+		if cust.ID == id {
+			mdb.customers[i].Title = c.Title
+			mdb.customers[i].Name = c.Name
+			mdb.customers[i].Surname = c.Surname
+			mdb.customers[i].Address = c.Address
+			mdb.customers[i].ZipCode = c.ZipCode
+			mdb.customers[i].Town = c.Town
+			mdb.customers[i].Province = c.Province
+			mdb.customers[i].Country = c.Country
+			mdb.customers[i].TaxCode = c.TaxCode
+			mdb.customers[i].Vat = c.Vat
+			mdb.customers[i].Info = c.Info
+
+			return mdb.customers[i], nil
+		}
+	}
+	return nil, errors.New("Cannot find the customer")
+}
+
 func (mdb *mockDB) DeleteCustomer(id int) error {
 	for i, c := range mdb.customers {
 		if c.ID == id {
@@ -176,6 +197,47 @@ func TestDeleteCustomer(t *testing.T) {
 	}
 }
 
+func TestUpdateCustomer(t *testing.T) {
+	customers := make([]*customer, 0)
+	n := "NameTest"
+	s := "SurnameTest"
+	customers = append(customers, &customer{
+		ID:      1,
+		Name:    &n,
+		Surname: &s,
+	})
+	b := &Backend{
+		db: &mockDB{
+			customers: customers,
+		},
+	}
+
+	tl1 := "UpdatedTitleTest"
+	n1 := "UpdatedNameTest"
+	s1 := "UpdatedSurnameTest"
+	jsonStr := []byte(fmt.Sprintf(`{"title":"%s", "name":"%s", "surname":"%s"}`, tl1, n1, s1))
+	rec := httptest.NewRecorder()
+	req, err := http.NewRequest("PUT", fmt.Sprintf("/api/v1/customer?id=%d", customers[0].ID), bytes.NewBuffer(jsonStr))
+
+	if err != nil {
+		t.Fatal(err)
+	}
+	http.Handler(b.customerHandler()).ServeHTTP(rec, req)
+
+	var c *customer
+	json.Unmarshal(rec.Body.Bytes(), &c)
+
+	if *c.Title != tl1 {
+		t.Fatalf("want: %v, got: %v", tl1, *c.Title)
+	}
+	if *c.Name != n1 {
+		t.Fatalf("want: %v, got: %v", n1, *c.Name)
+	}
+	if *c.Surname != s1 {
+		t.Fatalf("want: %v, got: %v", s1, *c.Surname)
+	}
+}
+
 func TestCustomerLifeCycle(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skip in short mode")
@@ -244,19 +306,42 @@ func TestCustomerLifeCycle(t *testing.T) {
 		t.Fatalf("customers, want: 1, got: %d", len(customers))
 	}
 
-	customer, err := bk.db.Customer(customers[0].ID)
+	newCustomer, err := bk.db.Customer(customers[0].ID)
 
-	if *customer.Name != n {
-		t.Fatalf("Name, want: %s, got: %s", n, *customer.Name)
+	if *newCustomer.Name != n {
+		t.Fatalf("Name, want: %s, got: %s", n, *newCustomer.Name)
 	}
-	if *customer.Surname != s {
-		t.Fatalf("Surname, want: %s, got: %s", s, *customer.Surname)
+	if *newCustomer.Surname != s {
+		t.Fatalf("Surname, want: %s, got: %s", s, *newCustomer.Surname)
 	}
-	if *customer.Title != tl {
-		t.Fatalf("Title, want: %s, got: %s", tl, *customer.Title)
+	if *newCustomer.Title != tl {
+		t.Fatalf("Title, want: %s, got: %s", tl, *newCustomer.Title)
 	}
 
-	if err := bk.db.DeleteCustomer(customer.ID); err != nil {
+	tl1 := "UpdatedTitleTest"
+	n1 := "UpdatedNameTest"
+	s1 := "UpdatedSurnameTest"
+	c1 := &customer{
+		Title:   &tl1,
+		Name:    &n1,
+		Surname: &s1,
+	}
+	updatedCustomer, err := bk.db.UpdateCustomer(customers[0].ID, c1)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if *updatedCustomer.Title != tl1 {
+		t.Fatalf("updated title, want %s, got: %s", tl1, *updatedCustomer.Title)
+	}
+	if *updatedCustomer.Name != n1 {
+		t.Fatalf("updated name, want %s, got: %s", n1, *updatedCustomer.Name)
+	}
+	if *updatedCustomer.Surname != s1 {
+		t.Fatalf("updated surname, want %s, got: %s", s1, *updatedCustomer.Surname)
+	}
+
+	if err := bk.db.DeleteCustomer(updatedCustomer.ID); err != nil {
 		t.Fatal(err)
 	}
 
@@ -269,7 +354,7 @@ func TestCustomerLifeCycle(t *testing.T) {
 		t.Fatalf("customers, want: 0, got: %d", len(customers))
 	}
 
-	if err := bk.db.DeleteCustomer(customer.ID); err == nil {
+	if err := bk.db.DeleteCustomer(updatedCustomer.ID); err == nil {
 		t.Fatal("Deleting not existing customer, want error, got nil")
 	}
 }

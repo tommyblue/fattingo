@@ -178,6 +178,47 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 	return db.Customer(int(id))
 }
 
+func (db *database) UpdateCustomer(id int, c *customer) (*customer, error) {
+	sqlStatement := `
+UPDATE customers SET
+	title = ?,
+	name = ?,
+	surname = ?,
+	address = ?,
+	zip_code = ?,
+	town = ?,
+	province = ?,
+	country = ?,
+	tax_code = ?,
+	vat = ?,
+	info = ?,
+	updated_at = ?
+WHERE id = ?;
+`
+	now := time.Now()
+	_, err := db.Exec(sqlStatement,
+		c.Title,
+		c.Name,
+		c.Surname,
+		c.Address,
+		c.ZipCode,
+		c.Town,
+		c.Province,
+		c.Country,
+		c.TaxCode,
+		c.Vat,
+		c.Info,
+		now,
+		id,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return db.Customer(id)
+}
+
 func (db *database) DeleteCustomer(id int) error {
 	res, err := db.Exec(`DELETE FROM customers WHERE id=?;`, id)
 	if err != nil {
