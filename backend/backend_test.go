@@ -12,6 +12,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/gorilla/mux"
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -98,7 +99,7 @@ func TestCustomers(t *testing.T) {
 
 func TestCustomer(t *testing.T) {
 	rec := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/api/v1/customer?id=1", nil)
+	req, _ := http.NewRequest("GET", "/api/v1/customer/1", nil)
 
 	customers := make([]*customer, 0)
 	n := "NameTest"
@@ -108,13 +109,21 @@ func TestCustomer(t *testing.T) {
 		Name:    &n,
 		Surname: &s,
 	})
+
 	b := &Backend{
 		db: &mockDB{
 			customers: customers,
 		},
+		router: mux.NewRouter(),
 	}
 
-	http.Handler(b.customerHandler()).ServeHTTP(rec, req)
+	if err := b.setupRoutes(); err != nil {
+		t.Fatal(err)
+	}
+
+	router := mux.NewRouter()
+	router.HandleFunc("/api/v1/customer/{id:[0-9]+}", b.customerHandler())
+	router.ServeHTTP(rec, req)
 
 	var c *customer
 	json.Unmarshal(rec.Body.Bytes(), &c)
@@ -143,7 +152,10 @@ func TestCreateCustomer(t *testing.T) {
 			customers: make([]*customer, 0),
 		},
 	}
-	http.Handler(b.customersHandler()).ServeHTTP(rec, req)
+
+	router := mux.NewRouter()
+	router.HandleFunc("/api/v1/customers", b.createCustomerHandler())
+	router.ServeHTTP(rec, req)
 
 	var c *customer
 	json.Unmarshal(rec.Body.Bytes(), &c)
@@ -173,20 +185,25 @@ func TestDeleteCustomer(t *testing.T) {
 	// Load customers
 	rec := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/api/v1/customers", nil)
-	http.Handler(b.customersHandler()).ServeHTTP(rec, req)
+
+	router := mux.NewRouter()
+	router.HandleFunc("/api/v1/customers", b.customersHandler())
+	router.ServeHTTP(rec, req)
 
 	var oldCustomers []*customer
 	json.Unmarshal(rec.Body.Bytes(), &oldCustomers)
 
 	// Delete 1 customer
 	delRec := httptest.NewRecorder()
-	delReq, _ := http.NewRequest("DELETE", "/api/v1/customers?id=2", nil)
-	http.Handler(b.customerHandler()).ServeHTTP(delRec, delReq)
+	delReq, _ := http.NewRequest("DELETE", "/api/v1/customer/2", nil)
+	router.HandleFunc("/api/v1/customer/{id:[0-9]+}", b.deleteCustomerHandler())
+	router.ServeHTTP(delRec, delReq)
 
 	// Reload customers
 	newRec := httptest.NewRecorder()
 	newReq, _ := http.NewRequest("GET", "/api/v1/customers", nil)
-	http.Handler(b.customersHandler()).ServeHTTP(newRec, newReq)
+	router.HandleFunc("/api/v1/customers", b.customersHandler())
+	router.ServeHTTP(newRec, newReq)
 
 	var newCustomers []*customer
 	json.Unmarshal(newRec.Body.Bytes(), &newCustomers)
@@ -217,12 +234,14 @@ func TestUpdateCustomer(t *testing.T) {
 	s1 := "UpdatedSurnameTest"
 	jsonStr := []byte(fmt.Sprintf(`{"title":"%s", "name":"%s", "surname":"%s"}`, tl1, n1, s1))
 	rec := httptest.NewRecorder()
-	req, err := http.NewRequest("PUT", fmt.Sprintf("/api/v1/customer?id=%d", customers[0].ID), bytes.NewBuffer(jsonStr))
+	req, err := http.NewRequest("PUT", fmt.Sprintf("/api/v1/customer/%d", customers[0].ID), bytes.NewBuffer(jsonStr))
 
 	if err != nil {
 		t.Fatal(err)
 	}
-	http.Handler(b.customerHandler()).ServeHTTP(rec, req)
+	router := mux.NewRouter()
+	router.HandleFunc("/api/v1/customer/{id:[0-9]+}", b.updateCustomerHandler())
+	router.ServeHTTP(rec, req)
 
 	var c *customer
 	json.Unmarshal(rec.Body.Bytes(), &c)
