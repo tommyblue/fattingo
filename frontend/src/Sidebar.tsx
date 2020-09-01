@@ -1,18 +1,19 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import { observer } from "mobx-react";
 
-import { Customer } from "./types";
+import Store from "./store";
 
 type SidebarProps = {
-  customers: Customer[];
+  store: Store;
 };
 
-export default function ({ customers }: SidebarProps) {
+const Sidebar = observer(({ store }: SidebarProps) => {
   return (
     <aside className="menu py-4 px-4">
       <p className="menu-label">Customers</p>
       <ul className="menu-list">
-        {customers
+        {store.Customers.slice()
           .sort((c1, c2) => (c1.title < c2.title ? -1 : 1))
           .map((customer) => (
             <li key={customer.id}>
@@ -22,4 +23,6 @@ export default function ({ customers }: SidebarProps) {
       </ul>
     </aside>
   );
-}
+});
+
+export default Sidebar;
