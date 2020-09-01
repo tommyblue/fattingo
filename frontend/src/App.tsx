@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
+import { BrowserRouter as Router } from "react-router-dom";
+
 import "./App.scss";
 import { Customer } from "./types";
-import Page from "./Page";
+import Pages from "./Pages";
 import Sidebar from "./Sidebar";
 
 function App() {
@@ -17,14 +19,16 @@ function App() {
   }, []);
 
   return (
-    <div className="columns">
-      <div className="column is-3">
-        <Sidebar customers={customers} />
+    <Router>
+      <div className="columns">
+        <div className="column is-3">
+          <Sidebar customers={customers} />
+        </div>
+        <div className="column">
+          <Pages />
+        </div>
       </div>
-      <div className="column">
-        <Page />
-      </div>
-    </div>
+    </Router>
   );
 }
 

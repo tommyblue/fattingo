@@ -1,4 +1,6 @@
 import React from "react";
+import { Link } from "react-router-dom";
+
 import { Customer } from "./types";
 
 type SidebarProps = {
@@ -14,7 +16,7 @@ export default function ({ customers }: SidebarProps) {
           .sort((c1, c2) => (c1.title < c2.title ? -1 : 1))
           .map((customer) => (
             <li key={customer.id}>
-              <a>{customer.title}</a>
+              <Link to={`/customers/${customer.id}`}>{customer.title}</Link>
             </li>
           ))}
       </ul>
