@@ -48,9 +48,10 @@ func (b *Backend) setupRoutes() error {
 	r.HandleFunc("/customer/{id:[0-9]+}", b.updateCustomerHandler()).Methods(http.MethodPut).HeadersRegexp("Content-Type", "application/json")
 	r.HandleFunc("/customer/{id:[0-9]+}", b.deleteCustomerHandler()).Methods(http.MethodDelete).HeadersRegexp("Content-Type", "application/json")
 	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "http://example.com")
-		w.Header().Set("Access-Control-Max-Age", "86400")
-	}).Methods(http.MethodOptions)
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+	})
+
+	r.Use(jsonResponseMiddleware)
 
 	spa := frontendHandler{staticPath: "../frontend/build", indexPath: "index.html"}
 	b.router.PathPrefix("/").Handler(spa)
@@ -63,6 +64,13 @@ func (b *Backend) setupRoutes() error {
 
 	http.Handle("/", b.router)
 	return nil
+}
+
+func jsonResponseMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		next.ServeHTTP(w, r)
+	})
 }
 
 func loggingMiddleware(next http.Handler) http.Handler {

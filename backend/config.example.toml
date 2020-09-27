@@ -1,4 +1,6 @@
 # Rename to ./config.toml or move to $HOME/.fattingo/config.toml
+[server]
+    address = ":5000"
 
 ## MYSQL DB
 # [db]

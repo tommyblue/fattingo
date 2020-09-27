@@ -39,11 +39,11 @@ func NewBackend(cfg *Config) (*Backend, error) {
 func (b *Backend) Run() error {
 	b.srv = &http.Server{
 		Handler:      b.router,
-		Addr:         ":5000",
+		Addr:         b.cfg.serverAddr,
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
 	}
-	log.Info("starting HTTP server...")
+	log.Infof("starting HTTP server at %s...", b.cfg.serverAddr)
 	return b.srv.ListenAndServe()
 }
 

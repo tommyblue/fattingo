@@ -7,6 +7,7 @@ import (
 )
 
 type Config struct {
+	serverAddr string
 	dbType     string // mysql or sqlite3
 	dbPath     string // Path to sqlite file
 	dbUser     string
@@ -23,6 +24,7 @@ func ReadConf() (*Config, error) {
 	viper.AddConfigPath(".")
 
 	// defaults
+	viper.SetDefault("server.address", ":5000")
 	viper.SetDefault("db.path", "./example-db.sqlite")
 	viper.SetDefault("db.user", "root")
 	viper.SetDefault("db.password", "s3cr3t")
@@ -39,6 +41,7 @@ func ReadConf() (*Config, error) {
 	}
 
 	return &Config{
+		serverAddr: viper.GetString("server.address"),
 		dbType:     viper.GetString("db.type"),
 		dbPath:     viper.GetString("db.path"),
 		dbUser:     viper.GetString("db.user"),
