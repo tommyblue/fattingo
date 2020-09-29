@@ -14,30 +14,31 @@ import (
 
 	"github.com/gorilla/mux"
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/tommyblue/fattingo/backend/model"
 )
 
 type mockDB struct {
-	customers []*customer
+	customers []*model.Customer
 }
 
 func (mdb *mockDB) Close() error {
 	return nil
 }
-func (mdb *mockDB) Customer(id int) (*customer, error) {
+func (mdb *mockDB) Customer(id int) (*model.Customer, error) {
 	return mdb.customers[0], nil
 }
 
-func (mdb *mockDB) Customers() ([]*customer, error) {
+func (mdb *mockDB) Customers() ([]*model.Customer, error) {
 	return mdb.customers, nil
 }
 
-func (mdb *mockDB) CreateCustomer(c *customer) (*customer, error) {
+func (mdb *mockDB) CreateCustomer(c *model.Customer) (*model.Customer, error) {
 	c.ID = 9999
 	mdb.customers = append(mdb.customers, c)
 	return c, nil
 }
 
-func (mdb *mockDB) UpdateCustomer(id int, c *customer) (*customer, error) {
+func (mdb *mockDB) UpdateCustomer(id int, c *model.Customer) (*model.Customer, error) {
 	for i, cust := range mdb.customers {
 		if cust.ID == id {
 			mdb.customers[i].Title = c.Title
@@ -74,10 +75,10 @@ func TestCustomers(t *testing.T) {
 	rec := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/api/v1/customers", nil)
 
-	customers := make([]*customer, 0)
+	customers := make([]*model.Customer, 0)
 	n := "NameTest"
 	s := "SurnameTest"
-	customers = append(customers, &customer{
+	customers = append(customers, &model.Customer{
 		ID:      1,
 		Name:    &n,
 		Surname: &s,
@@ -89,7 +90,7 @@ func TestCustomers(t *testing.T) {
 	}
 	http.Handler(b.customersHandler()).ServeHTTP(rec, req)
 
-	var c []*customer
+	var c []*model.Customer
 	json.Unmarshal(rec.Body.Bytes(), &c)
 
 	if !reflect.DeepEqual(customers, c) {
@@ -101,10 +102,10 @@ func TestCustomer(t *testing.T) {
 	rec := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/api/v1/customer/1", nil)
 
-	customers := make([]*customer, 0)
+	customers := make([]*model.Customer, 0)
 	n := "NameTest"
 	s := "SurnameTest"
-	customers = append(customers, &customer{
+	customers = append(customers, &model.Customer{
 		ID:      1,
 		Name:    &n,
 		Surname: &s,
@@ -125,7 +126,7 @@ func TestCustomer(t *testing.T) {
 	router.HandleFunc("/api/v1/customer/{id:[0-9]+}", b.customerHandler())
 	router.ServeHTTP(rec, req)
 
-	var c *customer
+	var c *model.Customer
 	json.Unmarshal(rec.Body.Bytes(), &c)
 
 	if !reflect.DeepEqual(customers[0], c) {
@@ -138,7 +139,7 @@ func TestCreateCustomer(t *testing.T) {
 	tl := "CreateTitleTest"
 	n := "CreateNameTest"
 	s := "CreateSurnameTest"
-	want := &customer{
+	want := &model.Customer{
 		ID:      9999,
 		Title:   &tl,
 		Name:    &n,
@@ -149,7 +150,7 @@ func TestCreateCustomer(t *testing.T) {
 
 	b := &Backend{
 		db: &mockDB{
-			customers: make([]*customer, 0),
+			customers: make([]*model.Customer, 0),
 		},
 	}
 
@@ -157,7 +158,7 @@ func TestCreateCustomer(t *testing.T) {
 	router.HandleFunc("/api/v1/customers", b.createCustomerHandler())
 	router.ServeHTTP(rec, req)
 
-	var c *customer
+	var c *model.Customer
 	json.Unmarshal(rec.Body.Bytes(), &c)
 
 	if !reflect.DeepEqual(want, c) {
@@ -166,11 +167,11 @@ func TestCreateCustomer(t *testing.T) {
 }
 
 func TestDeleteCustomer(t *testing.T) {
-	customers := make([]*customer, 0)
+	customers := make([]*model.Customer, 0)
 	for i := 0; i < 3; i++ {
 		n := fmt.Sprintf("NameTest%d", i)
 		s := fmt.Sprintf("SurnameTest%d", i)
-		customers = append(customers, &customer{
+		customers = append(customers, &model.Customer{
 			ID:      i,
 			Name:    &n,
 			Surname: &s,
@@ -190,7 +191,7 @@ func TestDeleteCustomer(t *testing.T) {
 	router.HandleFunc("/api/v1/customers", b.customersHandler())
 	router.ServeHTTP(rec, req)
 
-	var oldCustomers []*customer
+	var oldCustomers []*model.Customer
 	json.Unmarshal(rec.Body.Bytes(), &oldCustomers)
 
 	// Delete 1 customer
@@ -205,7 +206,7 @@ func TestDeleteCustomer(t *testing.T) {
 	router.HandleFunc("/api/v1/customers", b.customersHandler())
 	router.ServeHTTP(newRec, newReq)
 
-	var newCustomers []*customer
+	var newCustomers []*model.Customer
 	json.Unmarshal(newRec.Body.Bytes(), &newCustomers)
 
 	// Check
@@ -215,10 +216,10 @@ func TestDeleteCustomer(t *testing.T) {
 }
 
 func TestUpdateCustomer(t *testing.T) {
-	customers := make([]*customer, 0)
+	customers := make([]*model.Customer, 0)
 	n := "NameTest"
 	s := "SurnameTest"
-	customers = append(customers, &customer{
+	customers = append(customers, &model.Customer{
 		ID:      1,
 		Name:    &n,
 		Surname: &s,
@@ -243,7 +244,7 @@ func TestUpdateCustomer(t *testing.T) {
 	router.HandleFunc("/api/v1/customer/{id:[0-9]+}", b.updateCustomerHandler())
 	router.ServeHTTP(rec, req)
 
-	var c *customer
+	var c *model.Customer
 	json.Unmarshal(rec.Body.Bytes(), &c)
 
 	if *c.Title != tl1 {
@@ -290,7 +291,7 @@ func TestCustomerLifeCycle(t *testing.T) {
 		t.Fatal(err)
 	}
 	bk := &Backend{
-		db: &database{db},
+		db: &model.Database{db},
 	}
 
 	customers, err := bk.db.Customers()
@@ -305,7 +306,7 @@ func TestCustomerLifeCycle(t *testing.T) {
 	tl := "TitleTest"
 	n := "NameTest"
 	s := "SurnameTest"
-	c := &customer{
+	c := &model.Customer{
 		Title:   &tl,
 		Name:    &n,
 		Surname: &s,
@@ -340,7 +341,7 @@ func TestCustomerLifeCycle(t *testing.T) {
 	tl1 := "UpdatedTitleTest"
 	n1 := "UpdatedNameTest"
 	s1 := "UpdatedSurnameTest"
-	c1 := &customer{
+	c1 := &model.Customer{
 		Title:   &tl1,
 		Name:    &n1,
 		Surname: &s1,

@@ -7,28 +7,17 @@ import (
 
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/tommyblue/fattingo/backend/model"
 )
 
-type storeError struct {
-	status int
-	msg    string
-}
-
-func (err *storeError) Error() string {
-	return err.msg
-}
-
 type dataStore interface {
-	Customers() ([]*customer, error)
-	Customer(int) (*customer, error)
-	CreateCustomer(*customer) (*customer, error)
-	UpdateCustomer(int, *customer) (*customer, error)
+	Customers() ([]*model.Customer, error)
+	Customer(int) (*model.Customer, error)
+	CreateCustomer(*model.Customer) (*model.Customer, error)
+	UpdateCustomer(int, *model.Customer) (*model.Customer, error)
 	DeleteCustomer(int) error
+	CustomerInfo(int) (*model.CustomerInfo, error)
 	Close() error
-}
-
-type database struct {
-	*sql.DB
 }
 
 func newStore(cfg *Config) (dataStore, error) {
@@ -38,7 +27,7 @@ func newStore(cfg *Config) (dataStore, error) {
 	switch cfg.dbType {
 	case "mysql":
 		connString := fmt.Sprintf(
-			"%s:%s@tcp(%s:%d)/%s",
+			"%s:%s@tcp(%s:%d)/%s?parseTime=true",
 			cfg.dbUser,
 			cfg.dbPassword,
 			cfg.dbHost,
@@ -66,5 +55,5 @@ func newStore(cfg *Config) (dataStore, error) {
 		return nil, err
 	}
 
-	return &database{db}, nil
+	return &model.Database{db}, nil
 }

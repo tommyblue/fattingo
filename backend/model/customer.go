@@ -1,4 +1,4 @@
-package fattingo
+package model
 
 import (
 	"fmt"
@@ -8,39 +8,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type user struct {
-	ID       int     `json:"id"`
-	Title    *string `json:"title"`
-	Name     *string `json:"name"`
-	Surname  *string `json:"surname"`
-	Address  *string `json:"address"`
-	ZipCode  *string `json:"zip_code"`
-	Town     *string `json:"town"`
-	Province *string `json:"province"`
-	Country  *string `json:"country"`
-	TaxCode  *string `json:"tax_code"`
-	Vat      *string `json:"vat"`
-	Phone    *string `json:"phone"`
-	Email    *string `json:"email"`
-}
-
-type customer struct {
-	ID       int     `json:"id"`
-	UserID   int     `json:"user_id,omitempty"`
-	Title    *string `json:"title"`
-	Name     *string `json:"name"`
-	Surname  *string `json:"surname"`
-	Address  *string `json:"address"`
-	ZipCode  *string `json:"zip_code"`
-	Town     *string `json:"town"`
-	Province *string `json:"province"`
-	Country  *string `json:"country"`
-	TaxCode  *string `json:"tax_code"`
-	Vat      *string `json:"vat"`
-	Info     *string `json:"info"`
-}
-
-func (db *database) Customers() ([]*customer, error) {
+func (db *Database) Customers() ([]*Customer, error) {
 	rows, err := db.Query(`
 	SELECT
 		id,
@@ -62,9 +30,9 @@ func (db *database) Customers() ([]*customer, error) {
 	}
 	defer rows.Close()
 
-	customers := make([]*customer, 0)
+	customers := make([]*Customer, 0)
 	for rows.Next() {
-		c := &customer{}
+		c := &Customer{}
 		err = rows.Scan(
 			&c.ID,
 			&c.Title,
@@ -92,8 +60,8 @@ func (db *database) Customers() ([]*customer, error) {
 	return customers, nil
 }
 
-func (db *database) Customer(id int) (*customer, error) {
-	c := &customer{}
+func (db *Database) Customer(id int) (*Customer, error) {
+	c := &Customer{}
 	err := db.QueryRow(`
 	SELECT
 		id,
@@ -130,7 +98,7 @@ func (db *database) Customer(id int) (*customer, error) {
 	return c, nil
 }
 
-func (db *database) CreateCustomer(c *customer) (*customer, error) {
+func (db *Database) CreateCustomer(c *Customer) (*Customer, error) {
 	sqlStatement := `
 INSERT INTO customers (
 	title,
@@ -178,7 +146,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 	return db.Customer(int(id))
 }
 
-func (db *database) UpdateCustomer(id int, c *customer) (*customer, error) {
+func (db *Database) UpdateCustomer(id int, c *Customer) (*Customer, error) {
 	sqlStatement := `
 UPDATE customers SET
 	title = ?,
@@ -219,7 +187,7 @@ WHERE id = ?;
 	return db.Customer(id)
 }
 
-func (db *database) DeleteCustomer(id int) error {
+func (db *Database) DeleteCustomer(id int) error {
 	res, err := db.Exec(`DELETE FROM customers WHERE id=?;`, id)
 	if err != nil {
 		return err
@@ -232,14 +200,31 @@ func (db *database) DeleteCustomer(id int) error {
 
 	if n == 0 {
 		msg := fmt.Sprintf("Can't find the customer with id %d", id)
-		return &storeError{status: http.StatusNotFound, msg: msg}
+		return &DbError{Status: http.StatusNotFound, Msg: msg}
 	}
 
 	if n > 1 {
 		msg := fmt.Sprintf("Too many deleted customers (%d)", n)
 		log.Errorf("%s with id %d", msg, id)
-		return &storeError{status: http.StatusInternalServerError, msg: msg}
+		return &DbError{Status: http.StatusInternalServerError, Msg: msg}
 	}
 
 	return nil
+}
+
+func (db *Database) CustomerInfo(id int) (*CustomerInfo, error) {
+	c, err := db.Customer(id)
+	if err != nil {
+		return nil, err
+	}
+
+	s, err := db.Slips(id)
+	if err != nil {
+		return nil, err
+	}
+
+	return &CustomerInfo{
+		Customer: c,
+		Slips:    s,
+	}, nil
 }

@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	log "github.com/sirupsen/logrus"
+	"github.com/tommyblue/fattingo/backend/model"
 )
 
 func (b *Backend) rootHandler() http.HandlerFunc {
@@ -110,9 +111,9 @@ func (b *Backend) deleteCustomerHandler() http.HandlerFunc {
 		}
 
 		if err := b.db.DeleteCustomer(customerID); err != nil {
-			var sErr *storeError
+			var sErr *model.DbError
 			if errors.As(err, &sErr) {
-				http.Error(w, sErr.msg, sErr.status)
+				http.Error(w, sErr.Msg, sErr.Status)
 			} else {
 				log.Error(err)
 				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -123,8 +124,8 @@ func (b *Backend) deleteCustomerHandler() http.HandlerFunc {
 	}
 }
 
-func (b *Backend) populateCustomer(w http.ResponseWriter, r *http.Request) (*customer, bool) {
-	var c customer
+func (b *Backend) populateCustomer(w http.ResponseWriter, r *http.Request) (*model.Customer, bool) {
+	var c model.Customer
 	err := decodeJSONBody(w, r, &c)
 	if err != nil {
 		var mr *malformedRequest
