@@ -1,8 +1,9 @@
 import { computed, decorate, observable } from "mobx";
-import { Customer } from "./types";
+import { Customer, Slip } from "./types";
 
 class Store {
   _customers: Customer[] = [];
+  _slips: { [customerId: string]: Slip[] } = {};
 
   get Customers(): Customer[] {
     return this._customers;
@@ -10,6 +11,26 @@ class Store {
 
   set Customers(c: Customer[]) {
     this._customers = c;
+  }
+
+  Slips(customerId: number): Slip[] {
+    if (customerId in this._slips) {
+      return this._slips[customerId];
+    }
+    return [];
+  }
+
+  ActiveSlips(customerId: number): Slip[] {
+    if (customerId in this._slips) {
+      return this._slips[customerId].filter(
+        (s) => s.invoice_id === null && s.invoice_project_id === null
+      );
+    }
+    return [];
+  }
+
+  AddSlips(customerId: number, s: Slip[]) {
+    this._slips[customerId] = s;
   }
 
   AddCustomer(c: Customer) {
@@ -29,6 +50,7 @@ class Store {
 
 decorate(Store, {
   _customers: observable,
+  _slips: observable,
   Customers: computed,
 });
 
