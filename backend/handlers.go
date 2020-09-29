@@ -23,8 +23,6 @@ func (b *Backend) rootHandler() http.HandlerFunc {
 
 func (b *Backend) customersHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-
 		customers, err := b.db.Customers()
 
 		if err != nil {

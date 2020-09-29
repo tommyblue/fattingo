@@ -44,14 +44,18 @@ func (b *Backend) setupRoutes() error {
 
 	r.HandleFunc("/customers", b.customersHandler()).Methods(http.MethodGet)
 	r.HandleFunc("/customers", b.createCustomerHandler()).Methods(http.MethodPost).HeadersRegexp("Content-Type", "application/json")
-	r.HandleFunc("/customer/{id:[0-9]+}", b.customerHandler()).Methods(http.MethodGet)
-	r.HandleFunc("/customer/{id:[0-9]+}", b.updateCustomerHandler()).Methods(http.MethodPut).HeadersRegexp("Content-Type", "application/json")
-	r.HandleFunc("/customer/{id:[0-9]+}", b.deleteCustomerHandler()).Methods(http.MethodDelete).HeadersRegexp("Content-Type", "application/json")
+
+	r.HandleFunc("/customers/{id:[0-9]+}", b.customerHandler()).Methods(http.MethodGet)
+	r.HandleFunc("/customers/{id:[0-9]+}", b.updateCustomerHandler()).Methods(http.MethodPut).HeadersRegexp("Content-Type", "application/json")
+	r.HandleFunc("/customers/{id:[0-9]+}", b.deleteCustomerHandler()).Methods(http.MethodDelete).HeadersRegexp("Content-Type", "application/json")
+
+	// CatchAll - 404
 	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 	})
 
 	r.Use(jsonResponseMiddleware)
+	r.Use(CORSMiddleware)
 
 	spa := frontendHandler{staticPath: "../frontend/build", indexPath: "index.html"}
 	b.router.PathPrefix("/").Handler(spa)
@@ -64,6 +68,13 @@ func (b *Backend) setupRoutes() error {
 
 	http.Handle("/", b.router)
 	return nil
+}
+
+func CORSMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		next.ServeHTTP(w, r)
+	})
 }
 
 func jsonResponseMiddleware(next http.Handler) http.Handler {
