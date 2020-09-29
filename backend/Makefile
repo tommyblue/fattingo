@@ -8,6 +8,9 @@ help:
 build: ## Build fattingo binary in the local env
 	GOFLAGS=-mod=vendor go build -v ./cmd/fattingo/
 
+run: ## Run the program
+	go run ./cmd/fattingo/
+
 test-short: ## Run tests with -short flag in the local env
 	GOFLAGS=-mod=vendor go test -short -v -race ./...
 
