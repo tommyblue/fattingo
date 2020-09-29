@@ -75,6 +75,26 @@ func (b *Backend) customerHandler() http.HandlerFunc {
 	}
 }
 
+func (b *Backend) customerInfoHandler() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		customerID, err := getIDVar("id", r)
+		if err != nil {
+			log.Warn(err.Error())
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		i, err := b.db.CustomerInfo(customerID)
+		if err != nil {
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			log.Error(err)
+			return
+		}
+
+		json.NewEncoder(w).Encode(i)
+	}
+}
+
 func (b *Backend) updateCustomerHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		customerID, err := getIDVar("id", r)

@@ -49,6 +49,8 @@ func (b *Backend) setupRoutes() error {
 	r.HandleFunc("/customers/{id:[0-9]+}", b.updateCustomerHandler()).Methods(http.MethodPut).HeadersRegexp("Content-Type", "application/json")
 	r.HandleFunc("/customers/{id:[0-9]+}", b.deleteCustomerHandler()).Methods(http.MethodDelete).HeadersRegexp("Content-Type", "application/json")
 
+	r.HandleFunc("/customers/{id:[0-9]+}/info", b.customerInfoHandler()).Methods(http.MethodGet)
+
 	// CatchAll - 404
 	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
