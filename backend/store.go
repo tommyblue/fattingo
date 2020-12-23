@@ -7,8 +7,11 @@ import (
 
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/mattn/go-sqlite3"
+	log "github.com/sirupsen/logrus"
 	"github.com/tommyblue/fattingo/backend/model"
 )
+
+const maxConnRetries = 3
 
 type dataStore interface {
 	Customers() ([]*model.Customer, error)
@@ -38,6 +41,17 @@ func newStore(cfg *Config) (dataStore, error) {
 		if err != nil {
 			return nil, err
 		}
+		for i := 1; i <= maxConnRetries; i++ {
+			backoff := i * 3
+			if err := db.Ping(); err != nil {
+				if i == maxConnRetries {
+					return nil, err
+				}
+				log.Infof("db connection failed, retrying in %d seconds...", backoff)
+				time.Sleep(time.Duration(backoff) * time.Second)
+			}
+		}
+		log.Info("db connected.")
 
 		db.SetConnMaxLifetime(time.Minute * 3)
 		db.SetMaxOpenConns(10)

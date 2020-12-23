@@ -2,14 +2,14 @@
 [server]
     address = ":5000"
 
-## MYSQL DB
+## MYSQL DB - docker-compose
 # [db]
 #     type = "mysql"
-#     user = "root"
+#     user = "tommyblue"
 #     password = "s3cr3t"
 #     host = "db"
 #     port = 3306
-#     name = "fattingo_db"
+#     name = "fattingo"
 
 ## SQLITE DB
 [db]

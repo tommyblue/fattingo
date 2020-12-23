@@ -5,4 +5,5 @@ COPY . .
 
 RUN go install -v ./cmd/fattingo/
 
-CMD ["fattingo"]
+# CMD ["fattingo"]
+CMD ["go", "run", "./cmd/fattingo/"]

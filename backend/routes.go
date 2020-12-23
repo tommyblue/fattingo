@@ -88,7 +88,7 @@ func jsonResponseMiddleware(next http.Handler) http.Handler {
 
 func loggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Debugf("[%s] %s", r.Method, r.URL)
+		log.Infof("[%s] %s", r.Method, r.URL)
 		next.ServeHTTP(w, r)
 	})
 }
